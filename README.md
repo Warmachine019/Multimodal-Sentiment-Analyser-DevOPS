@@ -8,8 +8,7 @@
 
 A real-time, zero-latency mental well-being monitoring dashboard that fuses visual, audio, and textual data to accurately detect human emotions. Built to compensate for the environmental vulnerabilities of unimodal systems (like bad lighting or background noise) using a custom **Late-Fusion Probability Weighting** algorithm.
 
-**Developed by:** Spandan Sahai & Kaustav Roy
-
+**Developed by:** Spandan Sahai, Keshat Saini, Yatharth Saxena
 ---
 
 ##  Key Features
