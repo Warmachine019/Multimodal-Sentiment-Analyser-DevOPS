@@ -1,0 +1,10 @@
+# Reference list (the Dockerfile installs these in separate cached steps, torch/torchvision first)
+flask
+gunicorn
+boto3
+prometheus-client
+numpy==1.26.4
+tensorflow==2.15.1
+transformers==4.44.2
+moviepy==1.0.3
+fer==22.5.1

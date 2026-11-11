@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mental Well-Being Monitor</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+
+<body>
+
+    <div class="container">
+        <h1>Mental Well-Being Monitor</h1>
+        <p class="subtitle">Multimodal Emotion & Sentiment Intelligence</p>
+
+        <div class="dashboard">
+            <div class="box">
+                <div class="box-title">Webcam Tracker <span style="color:#4ade80; font-size: 0.8em;">● LIVE</span></div>
+                <div class="webcam-container">
+                    <div style="position:relative; width:100%;">
+                        <video id="cam" autoplay muted playsinline
+                            style="width:100%; display:block; border-radius:12px; transform:scaleX(-1);"></video>
+                        <canvas id="overlay"
+                            style="position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; transform:scaleX(-1);"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 25px;">
+                <div class="box">
+                    <div class="box-title">Manual Context Input</div>
+                    <textarea id="textInput"
+                        placeholder="How are you feeling today? Add some context here..."></textarea>
+                </div>
+
+                <div class="box">
+                    <div class="box-title">
+                        Audio Transcription
+                        <span class="status-text"><span class="pulse-dot"></span><span
+                                id="speechStatus">Initializing...</span></span>
+                    </div>
+                    <div class="stt-box" id="sttOutput">Waiting for speech...</div>
+                </div>
+            </div>
+
+            <div class="result-section">
+                <div class="box-title" style="justify-content: center; color: #38bdf8;">Fused System Output</div>
+
+                <div class="highlight-container">
+                    <div class="highlight" id="finalEmotion">Analyzing...</div>
+
+                    <div class="progress-container">
+                        <div class="progress-bar" id="scoreBar"></div>
+                    </div>
+
+                    <div class="score-text">Happiness Score: <span id="happinessScore">--</span>/100</div>
+                </div>
+
+                <div class="weights">
+                    Face: <strong id="wFace">0.0</strong> &nbsp;|&nbsp;
+                    Text: <strong id="wText">0.0</strong> &nbsp;|&nbsp;
+                    Speech: <strong id="wSpeech">0.0</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">MADE BY SPANDAN SAHAI & KAUSTAV ROY</div>
+
+    <script src="{{ url_for('static', filename='capture.js') }}"></script>
+    <script>
+        window.onload = function () {
+            analyzeLoop();
+        };
+
+        async function analyzeLoop() {
+            const text = document.getElementById("textInput").value;
+            try {
+                const response = await fetch('/analyze', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: text, ...CloudCapture.getPayload() })
+                });
+                const data = await response.json();
+                CloudCapture.drawBox(data.face);
+
+                // 1. Update Text Data
+                const emotionText = document.getElementById("finalEmotion");
+                const scoreBar = document.getElementById("scoreBar");
+
+                emotionText.innerText = data.final_emotion;
+                document.getElementById("happinessScore").innerText = data.happiness_score;
+                document.getElementById("wFace").innerText = data.weights.face;
+                document.getElementById("wText").innerText = data.weights.text;
+                document.getElementById("wSpeech").innerText = data.weights.speech;
+
+                // Update Speech UI
+                document.getElementById("speechStatus").innerText = data.speech_status;
+                document.getElementById("sttOutput").innerText = data.speech_transcript;
+
+                // 2. Dynamic UI Coloring Based on Emotion
+                let themeColor = "#38bdf8"; // Default Blue
+                let glowColor = "rgba(56, 189, 248, 0.5)";
+
+                if (data.final_emotion === "happy") {
+                    themeColor = "#4ade80"; // Green
+                    glowColor = "rgba(74, 222, 128, 0.6)";
+                } else if (data.final_emotion === "sad") {
+                    themeColor = "#f87171"; // Red
+                    glowColor = "rgba(248, 113, 113, 0.6)";
+                } else if (data.final_emotion === "neutral") {
+                    themeColor = "#94a3b8"; // Slate Gray
+                    glowColor = "rgba(148, 163, 184, 0.6)";
+                }
+
+                // Apply dynamic colors
+                emotionText.style.color = themeColor;
+                emotionText.style.textShadow = `0 0 15px ${glowColor}`;
+                scoreBar.style.width = `${data.happiness_score}%`;
+                scoreBar.style.backgroundColor = themeColor;
+                scoreBar.style.boxShadow = `0 0 10px ${glowColor}`;
+
+            } catch (error) {
+                console.error("Backend offline or error fetching data");
+            }
+
+            // CHANGED: Polls backend once every second (1000ms) instead of 4x a second
+            // This removes the jitter and makes the system look much more stable!
+            setTimeout(analyzeLoop, 1000);
+        }
+    </script>
+
+</body>
+
+</html>
